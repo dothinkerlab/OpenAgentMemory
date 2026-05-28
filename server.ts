@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import type Database from "better-sqlite3";
+import { mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { openDb } from "./db.js";
@@ -299,6 +300,7 @@ const isMain =
   process.argv[1]?.endsWith("server.js");
 
 if (isMain) {
+  mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const db = openDb(DB_PATH);
   const app = createApp(db);
   const port = Number(process.env.PORT ?? 8787);
