@@ -1,0 +1,23 @@
+{
+  "name": "ai-sessions",
+  "version": "0.1.0",
+  "description": "Local archive + search for AI coding-tool session logs",
+  "type": "module",
+  "bin": { "ai-sessions": "dist/cli.js" },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "sync": "tsx src/cli.ts sync",
+    "list": "tsx src/cli.ts list",
+    "search": "tsx src/cli.ts search"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
