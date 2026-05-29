@@ -8,10 +8,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/cli.ts",
-    "sync": "tsx src/cli.ts sync",
-    "list": "tsx src/cli.ts list",
-    "search": "tsx src/cli.ts search",
+    "dev": "tsx cli.ts",
+    "sync": "tsx cli.ts sync",
+    "list": "tsx cli.ts list",
+    "search": "tsx cli.ts search",
     "serve": "tsx server.ts"
   },
   "dependencies": {
