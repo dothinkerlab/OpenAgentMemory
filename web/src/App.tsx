@@ -135,6 +135,24 @@ export function App() {
       : sessions;
   }, [sessions, hideDeleted]);
 
+  // Group sessions by project, preserving the updatedAt-desc order so the
+  // most recently active project floats to the top.
+  const groupedSessions = useMemo(() => {
+    const groups: { project: string | null; items: Session[] }[] = [];
+    const index = new Map<string, number>();
+    for (const s of visibleSessions) {
+      const key = s.projectPath ?? "";
+      let i = index.get(key);
+      if (i === undefined) {
+        i = groups.length;
+        index.set(key, i);
+        groups.push({ project: s.projectPath, items: [] });
+      }
+      groups[i].items.push(s);
+    }
+    return groups;
+  }, [visibleSessions]);
+
   const inSearchMode = searchQuery.trim().length > 0;
 
   return (
@@ -228,28 +246,36 @@ export function App() {
                   />
                 </div>
               ))
-            : visibleSessions.map((s) => (
-                <div
-                  key={s.id}
-                  className={`session ${selectedId === s.id ? "active" : ""}`}
-                  onClick={() => setSelectedId(s.id)}
-                >
-                  <div className="title">
-                    {s.title ?? "(untitled)"}
-                    {s.sourceStatus === "deleted" && (
-                      <span className="deleted"> · deleted</span>
-                    )}
+            : groupedSessions.map((g) => (
+                <div key={g.project ?? "_none"} className="project-group">
+                  <div
+                    className="project-header"
+                    title={g.project ?? "(no project)"}
+                  >
+                    {projectLabel(g.project)}
+                    <span className="count">{g.items.length}</span>
                   </div>
-                  <div className="meta">
-                    <span className="source">{s.source}</span>
-                    <span>{s.messageCount} msgs</span>
-                    <span>{formatDate(s.updatedAt)}</span>
-                  </div>
-                  {s.projectPath && (
-                    <div className="project" title={s.projectPath}>
-                      {s.projectPath}
+                  {g.items.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`session ${
+                        selectedId === s.id ? "active" : ""
+                      }`}
+                      onClick={() => setSelectedId(s.id)}
+                    >
+                      <div className="title">
+                        {s.title ?? "(untitled)"}
+                        {s.sourceStatus === "deleted" && (
+                          <span className="deleted"> · deleted</span>
+                        )}
+                      </div>
+                      <div className="meta">
+                        <span className="source">{s.source}</span>
+                        <span>{s.messageCount} msgs</span>
+                        <span>{formatDate(s.updatedAt)}</span>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               ))}
 
@@ -330,6 +356,14 @@ function renderSnippet(raw: string): string {
   return escaped
     .replace(/«/g, "<mark>")
     .replace(/»/g, "</mark>");
+}
+
+function projectLabel(p: string | null): string {
+  if (!p) return "(no project)";
+  // Show the trailing dir name, which is what users usually recognize.
+  const trimmed = p.replace(/\/+$/, "");
+  const i = trimmed.lastIndexOf("/");
+  return i >= 0 ? trimmed.slice(i + 1) : trimmed;
 }
 
 function formatDate(iso: string | null): string {
