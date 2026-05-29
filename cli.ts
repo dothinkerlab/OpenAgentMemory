@@ -2,10 +2,12 @@ import os from "node:os";
 import path from "node:path";
 import { openDb, sync } from "./db.js";
 import { ClaudeCodeAdapter } from "./adapters/claude-code.js";
+import { CodexAdapter } from "./adapters/codex.js";
+import { OpenCodeAdapter } from "./adapters/opencode.js";
 import type { Adapter } from "./adapters/adapter.js";
 
 // Register adapters here as you add them.
-const adapters: Adapter[] = [new ClaudeCodeAdapter()];
+const adapters: Adapter[] = [new ClaudeCodeAdapter(), new CodexAdapter(), new OpenCodeAdapter()];
 
 const DB_PATH = path.join(os.homedir(), ".ai-sessions", "archive.db");
 
