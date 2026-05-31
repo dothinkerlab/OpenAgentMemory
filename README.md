@@ -2,7 +2,7 @@
 
 ---
 
-# AyeMemory
+# OpenAgentMemory
 
 > 本地优先的 AI 编程工具会话存档与全文搜索工具
 
@@ -63,8 +63,8 @@ cli.ts          server.ts    ← REST API（Hono，端口 8787）
 ## 快速开始
 
 ```bash
-git clone <repo-url> AyeMemory
-cd AyeMemory
+git clone <repo-url> OpenAgentMemory
+cd OpenAgentMemory
 npm install
 
 npm run sync          # 发现并归档所有已安装工具的会话
@@ -119,9 +119,9 @@ npm run dev   # http://localhost:5173
 
 <a id="english"></a>
 
-[中文](#ayememory) | English
+[中文](#openagentmemory) | English
 
-# AyeMemory
+# OpenAgentMemory
 
 > Local-first archive and full-text search for AI coding-tool sessions
 
@@ -182,8 +182,8 @@ cli.ts          server.ts    ← REST API (Hono, port 8787)
 ## Quick Start
 
 ```bash
-git clone <repo-url> AyeMemory
-cd AyeMemory
+git clone <repo-url> OpenAgentMemory
+cd OpenAgentMemory
 npm install
 
 npm run sync           # discover and archive sessions from all installed tools
