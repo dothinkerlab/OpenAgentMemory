@@ -1,10 +1,10 @@
 {
-  "name": "ai-sessions",
+  "name": "open-agent-memory",
   "version": "0.1.0",
   "description": "Local archive + search for AI coding-tool session logs",
   "type": "module",
   "bin": {
-    "ai-sessions": "dist/cli.js"
+    "open-agent-memory": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
