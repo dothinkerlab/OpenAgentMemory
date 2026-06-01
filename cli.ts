@@ -46,7 +46,7 @@ async function main() {
       .all();
     console.table(rows);
   } else {
-    console.log("usage: ai-sessions [sync|list|search <query>]");
+    console.log("usage: open-agent-memory [sync|list|search <query>]");
   }
 }
 

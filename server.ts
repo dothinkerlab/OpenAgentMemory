@@ -305,6 +305,6 @@ if (isMain) {
   const app = createApp(db);
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: app.fetch, port }, ({ port }) => {
-    console.log(`ai-sessions server listening on http://localhost:${port}`);
+    console.log(`open-agent-memory server listening on http://localhost:${port}`);
   });
 }
