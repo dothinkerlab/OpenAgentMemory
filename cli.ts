@@ -1,5 +1,6 @@
 import { openDb, sync } from "./db.js";
 import { dbPath, migrateLegacyDataHome } from "./paths.js";
+import { listSessions, searchMessages } from "./query.js";
 import { runSkillsCommand } from "./skillgen.js";
 import { ClaudeCodeAdapter } from "./adapters/claude-code.js";
 import { CodexAdapter } from "./adapters/codex.js";
@@ -23,27 +24,27 @@ async function main() {
     }
   } else if (cmd === "search") {
     const q = args.join(" ");
-    const rows = db
-      .prepare(
-        `SELECT s.source, s.title, s.project_path, m.role,
-                snippet(messages_fts, 0, '«', '»', '…', 12) AS snip
-         FROM messages_fts
-         JOIN messages m ON m.rowid = messages_fts.rowid
-         JOIN sessions s ON s.id = m.session_id
-         WHERE messages_fts MATCH ?
-         ORDER BY rank LIMIT 20`
-      )
-      .all(q);
-    console.table(rows);
+    const hits = searchMessages(db, q, { limit: 20 });
+    console.table(
+      hits.map((h) => ({
+        source: h.session.source,
+        title: h.session.title,
+        project_path: h.session.projectPath,
+        role: h.message.role,
+        snip: h.snippet,
+      }))
+    );
   } else if (cmd === "list") {
-    const rows = db
-      .prepare(
-        `SELECT source, message_count AS msgs, source_status AS status,
-                substr(updated_at,1,10) AS updated, title
-         FROM sessions ORDER BY updated_at DESC LIMIT 30`
-      )
-      .all();
-    console.table(rows);
+    const { items } = listSessions(db, { limit: 30, offset: 0 });
+    console.table(
+      items.map((s) => ({
+        source: s.source,
+        msgs: s.messageCount,
+        status: s.sourceStatus,
+        updated: s.updatedAt?.slice(0, 10) ?? null,
+        title: s.title,
+      }))
+    );
   } else if (cmd === "skills") {
     await runSkillsCommand(db, args);
   } else {
