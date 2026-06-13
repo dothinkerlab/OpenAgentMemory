@@ -27,7 +27,7 @@ adapters/          ← 每个工具一个适配器：discover() + parseFile() �
 db.ts              ← 摄入引擎：增量同步、去重、FTS5 索引维护
     │
     ▼
-SQLite 归档        ← ~/.ai-sessions/archive.db
+SQLite 归档        ← ~/.open-agent-memory/archive.db
     │
    ┌┴──────────────┐
    ▼               ▼
@@ -49,6 +49,9 @@ cli.ts          server.ts    ← REST API（Hono，端口 8787）
 | `db.ts` | 数据库 schema + `sync()` 摄入引擎 |
 | `cli.ts` | 命令行入口，适配器在此注册 |
 | `server.ts` | REST API 服务 |
+| `paths.ts` | 数据目录定位 + 旧目录（`~/.ai-sessions/`）自动迁移 |
+| `mine.ts` | 模式挖掘：重复命令序列、反复纠正（`skills` 命令的分析层） |
+| `skillgen.ts` | 调用本机 `claude` CLI 将挖掘结果生成 SKILL.md |
 
 ## 支持的 AI 工具
 
@@ -79,11 +82,31 @@ npm run search "关键词"  # 全文搜索
 | `npm run sync` | 发现并增量归档所有工具的会话 |
 | `npm run list` | 列出最近 30 条会话（来源、消息数、更新时间、标题） |
 | `npm run search "<q>"` | FTS5 全文搜索，返回前 20 条命中结果 |
+| `npm run skills -- [path]` | 从某项目的归档会话中挖掘重复行为并生成 skills（见下） |
 | `npm run serve` | 启动 REST API 服务（端口 8787） |
 | `npm run build` | 编译 TypeScript 到 `dist/` |
 | `npm run dev` | 通过 `tsx` 直接运行 CLI（无需编译） |
 
-归档数据库位置：`~/.ai-sessions/archive.db`
+归档数据库位置：`~/.open-agent-memory/archive.db`（首次运行时自动从旧的
+`~/.ai-sessions/` 迁移）
+
+## 生成 skills（实验性）
+
+分析一个项目/文件夹下的全部归档会话，挖掘**重复行为**——反复执行的命令/工具序列
+（如 build→test 流程）和反复出现的纠正反馈（中英文）——再调用本机已安装的
+`claude` CLI 把每个模式写成一份 Claude Code skill（SKILL.md）：
+
+```bash
+npm run skills -- /path/to/project              # 挖掘 + 生成
+npm run skills -- /path/to/project --report-only # 只输出候选报告，不调用 claude
+```
+
+可选参数：`--min-support N`（序列模式最少出现在 N 个会话，默认 3）、
+`--max-skills N`（最多生成 N 个，默认 10）、`--model name`（默认 sonnet）。
+
+结果写入审查目录 `~/.open-agent-memory/skills/<project-slug>/`（含 `report.md` /
+`report.json` 和每个 skill 的 `SKILL.md`），**不会**直接写入目标项目——人工审查后
+自行拷贝到项目的 `.claude/skills/`。未安装 `claude` CLI 时自动降级为仅输出报告。
 
 ## Web UI
 
@@ -146,7 +169,7 @@ adapters/          ← one per tool: discover() + parseFile() → normalized rec
 db.ts              ← ingest engine: incremental sync, dedup, FTS5 index
     │
     ▼
-SQLite archive     ← ~/.ai-sessions/archive.db
+SQLite archive     ← ~/.open-agent-memory/archive.db
     │
    ┌┴──────────────┐
    ▼               ▼
@@ -168,6 +191,9 @@ cli.ts          server.ts    ← REST API (Hono, port 8787)
 | `db.ts` | Schema + `sync()` ingest engine |
 | `cli.ts` | CLI entry point; register new adapters here |
 | `server.ts` | REST API server |
+| `paths.ts` | Data home resolution + auto-migration from legacy `~/.ai-sessions/` |
+| `mine.ts` | Pattern mining: repeated command sequences and corrections (`skills`) |
+| `skillgen.ts` | Turns mined patterns into SKILL.md via the local `claude` CLI |
 
 ## Supported AI Tools
 
@@ -198,11 +224,33 @@ npm run search "query" # full-text search
 | `npm run sync` | Discover and incrementally archive all tool sessions |
 | `npm run list` | List the 30 most recent sessions (source, msg count, updated, title) |
 | `npm run search "<q>"` | FTS5 full-text search, top 20 hits |
+| `npm run skills -- [path]` | Mine repeated behaviors from a project's sessions and generate skills |
 | `npm run serve` | Start the REST API server (port 8787) |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm run dev` | Run the CLI directly via `tsx` (no build step) |
 
-Archive database: `~/.ai-sessions/archive.db`
+Archive database: `~/.open-agent-memory/archive.db` (auto-migrated from the
+legacy `~/.ai-sessions/` on first run)
+
+## Generating skills (experimental)
+
+Analyze all archived sessions of a project/folder, mine **repeated behaviors** —
+recurring command/tool sequences (e.g. build→test flows) and recurring user
+corrections (English + Chinese) — then ask the locally installed `claude` CLI to
+write each pattern up as a Claude Code skill (SKILL.md):
+
+```bash
+npm run skills -- /path/to/project               # mine + generate
+npm run skills -- /path/to/project --report-only # candidates report only, no claude calls
+```
+
+Options: `--min-support N` (a sequence must appear in ≥ N sessions, default 3),
+`--max-skills N` (cap, default 10), `--model name` (default sonnet).
+
+Output goes to a review directory, `~/.open-agent-memory/skills/<project-slug>/`
+(`report.md` / `report.json` plus one `SKILL.md` per pattern) — never into the
+target project; review and copy into the project's `.claude/skills/` yourself.
+Without the `claude` CLI installed, the command degrades to report-only.
 
 ## Web UI
 

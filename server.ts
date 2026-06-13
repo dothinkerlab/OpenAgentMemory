@@ -2,10 +2,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import type Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { openDb } from "./db.js";
+import { dbPath, migrateLegacyDataHome } from "./paths.js";
 import type { Message, Session, Source } from "./model.js";
 
 // --- Row → model mappers ------------------------------------------------------
@@ -292,16 +290,14 @@ export type AppType = ReturnType<typeof createApp>;
 
 // --- Entry point --------------------------------------------------------------
 
-const DB_PATH = path.join(os.homedir(), ".ai-sessions", "archive.db");
-
 const isMain =
   import.meta.url === `file://${process.argv[1]}` ||
   process.argv[1]?.endsWith("server.ts") ||
   process.argv[1]?.endsWith("server.js");
 
 if (isMain) {
-  mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  const db = openDb(DB_PATH);
+  migrateLegacyDataHome();
+  const db = openDb(dbPath());
   const app = createApp(db);
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: app.fetch, port }, ({ port }) => {
