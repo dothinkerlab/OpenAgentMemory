@@ -12,6 +12,7 @@
     "sync": "tsx cli.ts sync",
     "list": "tsx cli.ts list",
     "search": "tsx cli.ts search",
+    "skills": "tsx cli.ts skills",
     "serve": "tsx server.ts"
   },
   "dependencies": {
