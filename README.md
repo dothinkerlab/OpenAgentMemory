@@ -8,6 +8,8 @@
 
 将 Claude Code、Codex、OpenCode 等多款 AI 编程工具的会话记录统一归档到本地 SQLite 数据库，支持 FTS5 全文搜索。数据不离本机，源文件只读，归档永不丢失。
 
+> **终极目标：打通各家厂商 Agent 的历史数据，让 AI 的记忆真正属于你。** 换工具，但不丢上下文。
+
 ## 功能特性
 
 - **多工具统一归档** — 目前支持 Claude Code、Codex、OpenCode；Gemini、Trae 计划中
@@ -149,6 +151,8 @@ npm run dev   # http://localhost:5173
 > Local-first archive and full-text search for AI coding-tool sessions
 
 Normalizes session logs from Claude Code, Codex, OpenCode, and more into a single local SQLite database with FTS5 full-text search. All data stays on your machine. Source files are never modified. Sessions outlive the tools that created them.
+
+> **The ultimate goal: connect the history across every vendor's Agent, so the AI's memory truly belongs to you.** Switch tools without losing your context.
 
 ## Features
 
