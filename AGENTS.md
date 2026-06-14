@@ -10,23 +10,34 @@ stores conversations in its own location and format; this project normalizes the
 into one SQLite database with full-text search.
 
 Stack: **TypeScript + Node.js (ESM)**, `better-sqlite3` (synchronous, FTS5).
-A web UI (Hono/Express + React/Vite) is planned but not yet built.
+A REST API (Hono) and a React/Vite web UI exist (`server.ts`, `web/`).
 
-## Architecture (3 layers)
+## Architecture
 
 ```
 adapters/  ── one per tool: discover() + parseFile() → normalized records
    ↓
 db.ts      ── ingest engine: incremental sync, dedup, FTS; the source of truth
    ↓
-cli.ts     ── (later: REST API + web UI)
+query.ts   ── shared read layer: row→model mappers + parameterized SQL
+   ↓
+cli.ts · server.ts   ── entry points (CLI + REST API); web/ is the React UI
 ```
+
+All read paths (CLI, REST, and future MCP) go through `query.ts` — no inline SQL
+or row mapping in the entry points.
 
 - `model.ts` — the shared `Session` / `Message` types. The whole app speaks these.
 - `adapters/adapter.ts` — the `Adapter` interface every tool implements.
 - `adapters/claude-code.ts` — reference adapter (JSONL). Mirror its structure.
-- `db.ts` — schema + `sync()`. Touch carefully (see invariants).
-- `cli.ts` — entry point; register new adapters in the `adapters[]` array here.
+- `db.ts` — schema migrations + `sync()`. Touch carefully (see invariants).
+- `query.ts` — the only place with read SQL + row→model mappers; shared by CLI,
+  REST, and the upcoming MCP server.
+- `cli.ts` — CLI entry point; register new adapters in the `adapters[]` array here.
+- `server.ts` — REST API (Hono, default port 8787); maps HTTP ⇆ `query.ts`.
+- `web/` — React + Vite frontend (three-column UI), typed off `server.ts`.
+- `eval.ts` + `fixtures/` — retrieval eval harness (`npm run eval`); the objective
+  gate for search changes (FTS baseline today, semantic retrieval later).
 - `paths.ts` — data home (`~/.open-agent-memory/`) + one-time auto-migration from
   the legacy `~/.ai-sessions/` dir (runs before every `openDb`, idempotent).
 - `mine.ts` — read-only pattern mining over the archive (repeated command
@@ -74,6 +85,8 @@ npm run list           # recent sessions
 npm run search "<q>"   # FTS5 search
 npm run skills -- [path] [--report-only] [--min-support N] [--max-skills N] [--model name]
                        # mine repeated behaviors from a project's sessions → SKILL.md
+npm run serve          # REST API (Hono, default port 8787)
+npm run eval           # retrieval eval harness (FTS baseline; gates search changes)
 npm run build          # tsc → dist/
 ```
 
@@ -93,6 +106,14 @@ target project.
   writes in `db.transaction(...)`.
 - Keep adapters free of DB knowledge. They return plain parsed records; `db.ts`
   owns all persistence, id generation, and dedup.
+- **All read SQL lives in `query.ts`.** Entry points (`cli.ts`, `server.ts`, MCP)
+  call its functions; never inline a `SELECT` or a row→model mapper in them.
+- **Schema changes are versioned migrations.** `db.ts` holds an ordered
+  `MIGRATIONS` array gated by `PRAGMA user_version`. Add a new migration with the
+  next version number — never edit or reorder a shipped one. Connection pragmas
+  (WAL, foreign_keys) run on every open, outside any transaction.
+- **Search changes must keep `npm run eval` green.** It scores recall/MRR against
+  a synthetic corpus; new retrieval work is proven against it, not asserted.
 
 ## Adding a new adapter (the common task)
 
@@ -119,8 +140,13 @@ tool doesn't fit the model, raise it rather than special-casing the core.
 - **Claude Code** (done): `~/.claude/projects/<encoded-cwd>/*.jsonl`. Dir name is a
   lossy encoding of the cwd — read the reliable `cwd` field inside each line instead
   of decoding the dir. Old sessions get compacted/removed by the tool (hence archiving).
-- **Codex**: JSONL, similar shape — likely the smallest next adapter.
-- **Trae**: VS Code derivative; data is in a SQLite `state.vscdb`. Open read-only.
+- **Codex** (done): JSONL under `~/.codex/sessions/` + `~/.codex/archived_sessions/`.
+  Note: `task_started`/`token_count`/`turn_aborted` and developer/system records are
+  currently skipped (no `raw` stored) — a known archive-first gap to revisit if
+  "memory" later needs that context.
+- **OpenCode** (done): SQLite at `~/.local/share/opencode/opencode.db`. Open read-only.
+- **Gemini CLI** (pending): JSONL; declared in the `Source` union, adapter not built.
+- **Trae** (pending): VS Code derivative; data is in a SQLite `state.vscdb`. Open read-only.
 
 ## Out of scope / do not do
 

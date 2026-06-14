@@ -8,10 +8,31 @@ import type { Adapter } from "./adapters/adapter.js";
 // everything if a format changes. source_path + source_status are the "pointer"
 // back to the original, so we know whether the source still exists.
 
-const SCHEMA = `
+// Connection-level pragmas, applied on every open (journal_mode is persistent,
+// foreign_keys is per-connection). These must run OUTSIDE a transaction.
+const PRAGMAS = `
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
+`;
 
+// Ordered, additive schema migrations. The highest applied version is tracked
+// in PRAGMA user_version. Rules:
+//   - Never edit or reorder a shipped migration; add a new one with the next
+//     version. This is what lets later phases (embeddings, session_links) add
+//     tables without rewriting the baseline.
+//   - Each runs in its own transaction; user_version is bumped atomically with it.
+interface Migration {
+  version: number;
+  up: string;
+}
+
+const MIGRATIONS: Migration[] = [
+  {
+    // Baseline. IF NOT EXISTS keeps this a safe no-op on archives created before
+    // the migration runner existed — they sit at user_version 0 with these
+    // tables already present, so applying v1 changes nothing but the version.
+    version: 1,
+    up: `
 CREATE TABLE IF NOT EXISTS sessions (
   id                  TEXT PRIMARY KEY,
   source              TEXT NOT NULL,
@@ -73,13 +94,36 @@ CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
   INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.rowid, old.content);
   INSERT INTO messages_fts(rowid, content) VALUES (new.rowid, new.content);
 END;
-`;
+`,
+  },
+];
 
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
 
+/**
+ * Apply any pending migrations. Idempotent: re-running after all migrations are
+ * applied is a no-op. Each migration commits with its user_version bump so a
+ * crash mid-run never leaves a half-applied version.
+ */
+export function runMigrations(db: Database.Database): void {
+  const current = db.pragma("user_version", { simple: true }) as number;
+  const pending = MIGRATIONS.filter((m) => m.version > current).sort(
+    (a, b) => a.version - b.version
+  );
+  for (const m of pending) {
+    db.transaction(() => {
+      db.exec(m.up);
+      // user_version respects the enclosing transaction, so the schema change
+      // and the version bump land (or roll back) together.
+      db.pragma(`user_version = ${m.version}`);
+    })();
+  }
+}
+
 export function openDb(file: string): Database.Database {
   const db = new Database(file);
-  db.exec(SCHEMA);
+  db.exec(PRAGMAS);
+  runMigrations(db);
   return db;
 }
 
