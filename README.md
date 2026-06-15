@@ -296,3 +296,7 @@ To add a new adapter (see [AGENTS.md](AGENTS.md) for full details):
 - `message.raw` stores the verbatim source — re-derive everything from it if a format changes
 - Source deletion = mark `deleted`, never `DELETE FROM sessions`
 - Sync is idempotent: the same data can be ingested multiple times without creating duplicates
+
+## License
+
+MIT. See [LICENSE](LICENSE).
