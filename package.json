@@ -4,7 +4,8 @@
   "description": "Local archive + search for AI coding-tool session logs",
   "type": "module",
   "bin": {
-    "open-agent-memory": "dist/cli.js"
+    "open-agent-memory": "dist/cli.js",
+    "open-agent-memory-mcp": "dist/mcp.js"
   },
   "scripts": {
     "build": "tsc",
@@ -13,13 +14,16 @@
     "list": "tsx cli.ts list",
     "search": "tsx cli.ts search",
     "skills": "tsx cli.ts skills",
+    "mcp": "tsx mcp.ts",
     "serve": "tsx server.ts",
     "eval": "tsx eval.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.4",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^12.10.0",
-    "hono": "^4.12.23"
+    "hono": "^4.12.23",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",

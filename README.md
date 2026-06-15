@@ -34,6 +34,7 @@ SQLite 归档        ← ~/.open-agent-memory/archive.db
    ┌┴──────────────┐
    ▼               ▼
 cli.ts          server.ts    ← REST API（Hono，端口 8787）
+                mcp.ts       ← 本地 MCP 记忆服务（stdio，只读）
                    │
                    ▼
                web/           ← React + Vite 前端（端口 5173）
@@ -86,11 +87,15 @@ npm run search "关键词"  # 全文搜索
 | `npm run search "<q>"` | FTS5 全文搜索，返回前 20 条命中结果 |
 | `npm run skills -- [path]` | 从某项目的归档会话中挖掘重复行为并生成 skills（见下） |
 | `npm run serve` | 启动 REST API 服务（端口 8787） |
+| `npm run mcp` | 启动本地 MCP 记忆服务（stdio，只读） |
 | `npm run build` | 编译 TypeScript 到 `dist/` |
 | `npm run dev` | 通过 `tsx` 直接运行 CLI（无需编译） |
 
 归档数据库位置：`~/.open-agent-memory/archive.db`（首次运行时自动从旧的
 `~/.ai-sessions/` 迁移）
+
+MCP 服务只暴露只读查询工具（搜索、列出会话、读取会话、读取消息），不会触发 sync、
+执行 SQL、读取源文件或返回消息的原始 `raw` 记录。
 
 ## 生成 skills（实验性）
 
@@ -178,6 +183,7 @@ SQLite archive     ← ~/.open-agent-memory/archive.db
    ┌┴──────────────┐
    ▼               ▼
 cli.ts          server.ts    ← REST API (Hono, port 8787)
+                mcp.ts       ← local MCP memory service (stdio, read-only)
                    │
                    ▼
                web/           ← React + Vite frontend (port 5173)
@@ -230,11 +236,16 @@ npm run search "query" # full-text search
 | `npm run search "<q>"` | FTS5 full-text search, top 20 hits |
 | `npm run skills -- [path]` | Mine repeated behaviors from a project's sessions and generate skills |
 | `npm run serve` | Start the REST API server (port 8787) |
+| `npm run mcp` | Start the local MCP memory service (stdio, read-only) |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm run dev` | Run the CLI directly via `tsx` (no build step) |
 
 Archive database: `~/.open-agent-memory/archive.db` (auto-migrated from the
 legacy `~/.ai-sessions/` on first run)
+
+The MCP service exposes read-only query tools only: search, list sessions, get a
+session, and get messages. It does not run sync, execute SQL, read source files,
+or return message `raw` source records.
 
 ## Generating skills (experimental)
 
